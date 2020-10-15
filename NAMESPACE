@@ -3,6 +3,7 @@
 export(from_h5ad)
 export(to_h5ad)
 import(dynwrap)
+importFrom(Matrix,Matrix)
 importFrom(dplyr,bind_cols)
 importFrom(dplyr,mutate)
 importFrom(dplyr,rename_all)

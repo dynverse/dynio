@@ -8,6 +8,7 @@
 #' @importFrom tibble rownames_to_column
 #' @importFrom reticulate py_set_item
 #' @import dynwrap
+#' @importFrom Matrix Matrix
 #'
 #' @export
 from_h5ad <- function(anndata, name_prefix = "") {
@@ -19,8 +20,16 @@ from_h5ad <- function(anndata, name_prefix = "") {
   obs_names <- python_builtins$list(anndata$obs_names)
   var_names <- python_builtins$list(anndata$var_names)
 
+  # read from X
+  expression <- as(anndata$X, "CsparseMatrix")
+  rownames(expression) <- obs_names
+  colnames(expression) <- var_names
+  counts <- expression
+  counts@x <- 2^counts@x - 1
+
   # read from uns slots
-  milestone_ids <- anndata$uns[paste0(name_prefix, "milestone_ids")]
+  # as.vector removes extra attributes
+  milestone_ids <- anndata$uns[paste0(name_prefix, "milestone_ids")] %>% as.vector
   milestone_network <- anndata$uns[paste0(name_prefix, "milestone_network")]
   dimred_ids <- anndata$uns[paste0(name_prefix, "dimred_ids")]
 
@@ -57,6 +66,10 @@ from_h5ad <- function(anndata, name_prefix = "") {
   traj <-
     wrap_data(
       cell_ids = obs_names
+    ) %>%
+    add_expression(
+      expression = expression,
+      counts = counts
     ) %>%
     add_trajectory(
       milestone_ids = milestone_ids,
