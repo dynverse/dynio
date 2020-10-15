@@ -13,6 +13,9 @@ to_h5ad <- function(anndata, traj, gimp = NULL, name_prefix = "") {
   obs_names <- python_builtins$list(anndata$obs_names)
   var_names <- python_builtins$list(anndata$var_names)
 
+  # TODO:
+  # check whether there is expr/counts in traj
+
   # write to uns slots
   dimred_segments <- bind_cols(
     traj$dimred_segment_progressions,
