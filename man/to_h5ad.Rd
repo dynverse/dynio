@@ -4,12 +4,19 @@
 \alias{to_h5ad}
 \title{Copy trajectory to h5ad}
 \usage{
-to_h5ad(anndata, traj, gimp = NULL, name_prefix = "")
+to_h5ad(
+  traj,
+  anndata = NULL,
+  trajectory_prefix = "traj",
+  dimred_prefix = trajectory_prefix,
+  grouping_prefix = trajectory_prefix,
+  fimp_prefix = trajectory_prefix
+)
 }
 \arguments{
-\item{anndata}{AnnData object}
-
 \item{traj}{Trajectory object}
+
+\item{anndata}{AnnData object}
 
 \item{gimp}{Gene Importance object}
 

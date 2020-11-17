@@ -19,8 +19,9 @@ Depends:
 Imports:
   anndata,
   dplyr,
+  dynwrap,
   Matrix,
-  purrr,
-  reticulate
+  purrr
 Remotes:
-  rcannood/anndata
+  rcannood/anndata,
+  dynverse/dynwrap@devel

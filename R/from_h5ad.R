@@ -6,59 +6,56 @@
 #' @importFrom dplyr bind_cols select mutate rename_all
 #' @importFrom purrr %>%
 #' @importFrom tibble rownames_to_column
-#' @importFrom reticulate py_set_item
 #' @import dynwrap
 #' @importFrom Matrix Matrix
 #'
 #' @export
-from_h5ad <- function(anndata, name_prefix = "") {
-  # anndata <- anndata::read_h5ad("/home/rcannood/workspace/jnj/scpipelineviash/src/ti/slingshot/output.h5ad")
-  # traj <- readr::read_rds("/home/rcannood/workspace/jnj/scpipelineviash/src/ti/slingshot/output.rds")
-  # gimp <- readr::read_rds("/home/rcannood/workspace/jnj/scpipelineviash/src/ti/slingshot/gimp.rds")
-  # name_prefix <- "slingshot_"
-
-  obs_names <- python_builtins$list(anndata$obs_names)
-  var_names <- python_builtins$list(anndata$var_names)
+from_h5ad <- function(
+  anndata,
+  trajectory_prefix = "traj",
+  dimred_prefix = trajectory_prefix,
+  grouping_prefix = trajectory_prefix
+) {
+  obs_names <- anndata$obs_names
+  var_names <- anndata$var_names
 
   # read from X
-  expression <- as(anndata$X, "CsparseMatrix")
-  rownames(expression) <- obs_names
-  colnames(expression) <- var_names
+  expression <- as(anndata[], "CsparseMatrix")
   counts <- expression
   counts@x <- 2^counts@x - 1
 
   # read from uns slots
   # as.vector removes extra attributes
-  milestone_ids <- anndata$uns[paste0(name_prefix, "milestone_ids")] %>% as.vector
-  milestone_network <- anndata$uns[paste0(name_prefix, "milestone_network")]
-  dimred_ids <- anndata$uns[paste0(name_prefix, "dimred_ids")]
+  milestone_ids <- anndata$uns[[paste0(trajectory_prefix, "milestone_ids")]] %>% as.vector
+  milestone_network <- anndata$uns[[paste0(trajectory_prefix, "milestone_network")]]
+  dimred_ids <- anndata$uns[[paste0(dimred_prefix, "dimred_ids")]]
 
-  dimred_segments <- anndata$uns[paste0(name_prefix, "dimred_segments")]
+  dimred_segments <- anndata$uns[[paste0(trajectory_prefix, "dimred_segments")]]
   dimred_segment_progressions <- dimred_segments %>% select(-!!dimred_ids)
   dimred_segment_points <- dimred_segments %>% select(!!dimred_ids) %>% as.matrix
 
-  dimred_milestones <- anndata$uns[paste0(name_prefix, "dimred_milestones")]
+  dimred_milestones <- anndata$uns[[paste0(trajectory_prefix, "dimred_milestones")]]
   rownames(dimred_milestones) <- milestone_ids
   colnames(dimred_milestones) <- dimred_ids
 
   # read from obs slots
-  progr_names <- paste0(name_prefix, c("from", "to", "percentage"))
+  progr_names <- paste0(trajectory_prefix, c("from", "to", "percentage"))
   progressions <- anndata$obs %>% select(!!progr_names) %>%
-    rename_all(function(x) gsub(name_prefix, "", x, fixed = TRUE)) %>%
+    rename_all(function(x) gsub(trajectory_prefix, "", x, fixed = TRUE)) %>%
     rownames_to_column("cell_id") %>%
     mutate(from = milestone_ids[from], to = milestone_ids[to])
 
   # read from var slots
-  gimp_name <- paste0(name_prefix, "importance")
+  gimp_name <- paste0(fimp_prefix, "importance")
   if (gimp_name %in% colnames(anndata$var)) {
     gimp <- anndata$var[gimp_name] %>% rownames_to_column("feature_id")
-    colnames(gimp) <- gsub(name_prefix, "", colnames(gimp), fixed = TRUE)
+    colnames(gimp) <- gsub(fimp_prefix, "", colnames(gimp), fixed = TRUE)
   } else {
     gimp <- NULL
   }
 
   # read from obsm slots
-  dimred <- anndata$obsm[paste0(name_prefix, "dimred")]
+  dimred <- anndata$obsm[paste0(dimred_prefix, "dimred")]
   rownames(dimred) <- obs_names
   colnames(dimred) <- paste0("comp_", seq_len(ncol(dimred)))
 
@@ -81,9 +78,10 @@ from_h5ad <- function(anndata, name_prefix = "") {
       dimred_segment_points = dimred_segment_points,
       dimred_segment_progressions = dimred_segment_progressions,
       dimred_milestones = dimred_milestones
+    ) %>%
+    add_feature_importance(
+      feature_importance = gimp
     )
-
-  traj$feature_importances <- gimp
 
   traj
 }

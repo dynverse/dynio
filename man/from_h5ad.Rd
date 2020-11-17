@@ -4,7 +4,12 @@
 \alias{from_h5ad}
 \title{Copy trajectory from h5ad}
 \usage{
-from_h5ad(anndata, name_prefix = "")
+from_h5ad(
+  anndata,
+  trajectory_prefix = "traj",
+  dimred_prefix = trajectory_prefix,
+  grouping_prefix = trajectory_prefix
+)
 }
 \arguments{
 \item{anndata}{AnnData object}
