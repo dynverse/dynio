@@ -1,9 +1,17 @@
+
+
+
+
+
 #' Copy trajectory to h5ad
 #'
 #' @param anndata AnnData object
 #' @param traj Trajectory object
-#' @param gimp Gene Importance object
-#' @param name_prefix A prefix to add to each created object in the anndata.
+#' @param anndata AnnData object
+#' @param trajectory_prefix The prefix of a trajectory to write.
+#' @param dimred_name A dimred to write, a matrix in `ad$obsm`.
+#' @param grouping_name A grouping to write, a column in `ad$obs`.
+#' @param fimp_name A feature importance to write, a column in `ad$var`.
 #'
 #' @importFrom dplyr bind_cols select mutate
 #' @importFrom purrr %>%
@@ -11,56 +19,73 @@
 to_h5ad <- function(
   traj,
   anndata = NULL,
-  trajectory_prefix = "traj",
-  dimred_prefix = trajectory_prefix,
-  grouping_prefix = trajectory_prefix,
-  fimp_prefix = trajectory_prefix
+  trajectory_prefix = NULL,
+  dimred_name = NULL,
+  grouping_name = NULL,
+  fimp_name = NULL
 ) {
-  if (!is.null(anndata)) {
-    obs_names <- anndata$obs_names
-    var_names <- anndata$var_names
-    X <- NULL # if anndata is not null, X is assumed to be filled in already
-  } else {
-    obs_names <- traj$cell_ids
-    var_names <- traj$feature_ids
-    X <- traj$expression
+  if (is.null(anndata)) {
+    anndata <- anndata::AnnData(
+      X = traj$expression,
+      obs_names = traj$cell_ids,
+      var_names = traj$feature_ids
+    )
   }
 
-  # process clustering
-  dimred_segments <- bind_cols(
-    traj$dimred_segment_progressions,
-    as.data.frame(traj$dimred_segment_points)
-  )
-  dimred_ids <- colnames(traj$dimred)
+  obs_names <- anndata$obs_names
+  var_names <- anndata$var_names
 
-  anndata$uns[[paste0(dimred_prefix, "dimred_ids")]] <- dimred_ids
-  anndata$uns[[paste0(trajectory_prefix, "milestone_ids")]] <- traj$milestone_ids
-  anndata$uns[[paste0(trajectory_prefix, "milestone_network")]] <- traj$milestone_network
-  anndata$uns[[paste0(trajectory_prefix, "dimred_segments")]] <- dimred_segments
-  anndata$uns[[paste0(trajectory_prefix, "dimred_milestones")]] <- traj$dimred_milestones
-
-  # write to obs slots
-  progr_obs <- traj$progressions %>% as.data.frame() %>% select(-cell_id) %>% mutate(
-    from = match(from, traj$milestone_ids),
-    to = match(to, traj$milestone_ids)
-  )
-  rownames(progr_obs) <- traj$progressions$cell_id
-  progr_obs <- progr_obs[obs_names,,drop=FALSE]
-  for (nam in names(progr_obs)) {
-    anndata$obs[paste0(trajectory_prefix, nam)] <- progr_obs[[nam]]
+  # write grouping
+  if (dynwrap::is_wrapper_with_grouping(traj) && !is.null(grouping_name)) {
+    group <- traj$grouping
+    group_obs <- group %>% select(-cell_id) %>% as.data.frame()
+    rownames(group_obs) <- fimp$cell_id
+    anndata$obs[[grouping_name]] <- group_obs[,1]
   }
 
-  # write to var slots
-  fimp <- traj$feature_importance
-  if (!is.null(fimp)) {
+  # write dimred
+  if (dynwrap::is_wrapper_with_dimred(traj) && !is.null(dimred_name)) {
+    anndata$obsm[[dimred_name]] <- traj$dimred[obs_names,,drop=FALSE]
+  }
+
+  # write feature importance
+  if (dynwrap::is_wrapper_with_feature_importance(traj) && !is.null(fimp_name)) {
+    fimp <- traj$feature_importance
     fimp_var <- fimp %>% select(-feature_id) %>% as.data.frame()
     rownames(fimp_var) <- fimp$feature_id
-    fimp_var <- fimp_var[var_names,,drop=FALSE]
-    for (nam in names(fimp_var)) {
-      anndata$var[paste0(fimp_prefix, nam)] <- fimp_var[[nam]]
-    }
+    anndata$var[[fimp_name]] <- fimp_var[,1]
   }
 
-  # write to obsm slots
-  anndata$obsm[[paste0(dimred_prefix, "dimred")]] <- traj$dimred
+
+  # process traj
+  if (dynwrap::is_wrapper_with_trajectory(traj) && !is.null(trajectory_prefix)) {
+    # process clustering
+    dimred_segments <- bind_cols(
+      traj$dimred_segment_progressions,
+      as.data.frame(traj$dimred_segment_points)
+    )
+    dimred_ids <- colnames(traj$dimred)
+
+    anndata$uns[[paste0(trajectory_prefix, "dimred_ids")]] <- dimred_ids
+    anndata$uns[[paste0(trajectory_prefix, "milestone_ids")]] <- traj$milestone_ids
+    anndata$uns[[paste0(trajectory_prefix, "milestone_network")]] <- traj$milestone_network
+    anndata$uns[[paste0(trajectory_prefix, "dimred_segments")]] <- dimred_segments
+    anndata$uns[[paste0(trajectory_prefix, "dimred_milestones")]] <- traj$dimred_milestones
+
+    progr_obs <- traj$progressions %>% as.data.frame() %>% select(-cell_id) %>% mutate(
+      from = match(from, traj$milestone_ids),
+      to = match(to, traj$milestone_ids)
+    )
+    rownames(progr_obs) <- traj$progressions$cell_id
+    progr_obs <- progr_obs[obs_names,,drop=FALSE]
+    for (nam in names(progr_obs)) {
+      anndata$obs[paste0(trajectory_prefix, nam)] <- progr_obs[[nam]]
+    }
+
+    anndata$obsm[[paste0(trajectory_prefix, "dimred")]] <- traj$dimred
+  }
+
+
+
+  anndata
 }

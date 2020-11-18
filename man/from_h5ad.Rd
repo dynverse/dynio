@@ -6,15 +6,25 @@
 \usage{
 from_h5ad(
   anndata,
-  trajectory_prefix = "traj",
-  dimred_prefix = trajectory_prefix,
-  grouping_prefix = trajectory_prefix
+  layer_name = NULL,
+  trajectory_prefix = "traj_",
+  dimred_name = "dimred",
+  grouping_name = "cluster",
+  fimp_name = "importance"
 )
 }
 \arguments{
 \item{anndata}{AnnData object}
 
-\item{name_prefix}{A prefix to add to each created object in the anndata.}
+\item{layer_name}{A layer name to read. If `NULL`, will use `ad$X`.}
+
+\item{trajectory_prefix}{The prefix of a trajectory to read.}
+
+\item{dimred_name}{A dimred to read, a matrix in `ad$obsm`.}
+
+\item{grouping_name}{A grouping to read, a column in `ad$obs`.}
+
+\item{fimp_name}{A feature importance to read, a column in `ad$var`.}
 }
 \description{
 Copy trajectory from h5ad

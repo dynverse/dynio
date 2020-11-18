@@ -7,10 +7,10 @@
 to_h5ad(
   traj,
   anndata = NULL,
-  trajectory_prefix = "traj",
-  dimred_prefix = trajectory_prefix,
-  grouping_prefix = trajectory_prefix,
-  fimp_prefix = trajectory_prefix
+  trajectory_prefix = NULL,
+  dimred_name = NULL,
+  grouping_name = NULL,
+  fimp_name = NULL
 )
 }
 \arguments{
@@ -18,9 +18,13 @@ to_h5ad(
 
 \item{anndata}{AnnData object}
 
-\item{gimp}{Gene Importance object}
+\item{trajectory_prefix}{The prefix of a trajectory to write.}
 
-\item{name_prefix}{A prefix to add to each created object in the anndata.}
+\item{dimred_name}{A dimred to write, a matrix in `ad$obsm`.}
+
+\item{grouping_name}{A grouping to write, a column in `ad$obs`.}
+
+\item{fimp_name}{A feature importance to write, a column in `ad$var`.}
 }
 \description{
 Copy trajectory to h5ad
