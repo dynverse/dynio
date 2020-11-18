@@ -120,8 +120,11 @@ from_h5ad <- function(
 
   # read feature importances
   if (!is.null(fimp_name) && fimp_name %in% anndata$var_keys()) {
-    gimp <- anndata$var[[fimp_name]] %>% rownames_to_column("feature_id")
-    colnames(gimp) <- c("feature_id", "importance")
+    gimp <- data.frame(
+      feature_id = var_names,
+      importance = anndata$var[[fimp_name]],
+      stringsAsFactors = FALSE
+    )
 
     traj <- traj %>% add_feature_importance(
       feature_importance = gimp
