@@ -35,9 +35,9 @@ from_h5ad <- function(
   # read expression
   expression <-
     if (is.null(layer_name)) {
-      as(anndata[], "CsparseMatrix")
+      as(anndata$X, "CsparseMatrix")
     } else {
-      anndata$layers[[layer_name]]
+      anndata$layers[layer_name]
     }
   if (!is.null(expression)) {
     counts <- expression
