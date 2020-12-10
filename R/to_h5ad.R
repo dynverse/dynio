@@ -26,9 +26,7 @@ to_h5ad <- function(
 ) {
   if (is.null(anndata)) {
     anndata <- anndata::AnnData(
-      X = traj$expression,
-      obs_names = traj$cell_ids,
-      var_names = traj$feature_ids
+      X = traj$expression
     )
   }
 
