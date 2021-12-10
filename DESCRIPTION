@@ -23,4 +23,4 @@ Imports:
   Matrix,
   purrr
 Remotes:
-  rcannood/anndata
+  dynverse/anndata
